@@ -1,5 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, CallbackQueryHandler
+from telegram.ext import filters  # Filters ko is tarah import karein
 import random
 
 # Bot ka API Token yahan dalen
@@ -49,7 +50,7 @@ def main():
 
     # Commands aur handlers
     dispatcher.add_handler(CommandHandler("start", send_caption_options))
-    dispatcher.add_handler(MessageHandler(Filters.photo, send_caption_options))
+    dispatcher.add_handler(MessageHandler(filters.PHOTO, send_caption_options))  # Filters ko update karna hoga
     dispatcher.add_handler(CallbackQueryHandler(handle_caption_choice))
 
     updater.start_polling()
