@@ -1,61 +1,71 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, CallbackQueryHandler
-from telegram.ext import filters  # Filters ko is tarah import karein
-import random
+port random
+from pyrogram import Client, filters
+from pyrogram.types import Message
 
-# Bot ka API Token yahan dalen
-API_TOKEN = "7175839469:AAGZAd1HHRr77yOJK8tdExxjkziKiCA2SKM"  # 🚨 BotFather ka diya hua token dalen
+# Bot credentials
+api_id = 25649636  # Replace with your API ID
+api_hash = "43af470d1c625e603733268b3c2f7b8f"  # Replace with your API hash
+bot_token = ""  # Replace with your bot token
 
-# Captions ko text file se read karein
-def load_captions():
-    with open("captions.txt", "r", encoding="utf-8") as file:
-        captions = file.readlines()
-    return [caption.strip() for caption in captions]
+# List of allowed channel IDs
+allowed_channels = [-100000000]  # Replace with your channel IDs
 
-# Caption options dikhane ka function
-def send_caption_options(update: Update, context: CallbackContext):
-    # Captions ko text file se load karein
-    captions = load_captions()
+# Initialize the bot
+app = Client("caption_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+
+# Load captions from the file
+with open("captions.txt", "r") as file:
+    captions = [line.strip() for line in file if line.strip()]
+
+# Dictionary to store processed media_group_id
+processed_albums = set()
+
+@app.on_message(filters.channel & filters.media)
+async def add_caption(client, message: Message):
+    # Check if the message is from an allowed channel
+    if message.chat.id not in allowed_channels:
+        return
     
-    # Randomly 3 captions choose karein
-    selected_captions = random.sample(captions, min(3, len(captions)))
+    # Check if the post is part of an album (multiple media)
+    if message.media_group_id:
+        # Skip if the album has already been processed
+        if message.media_group_id in processed_albums:
+            return
+        
+        # Mark the album as processed
+        processed_albums.add(message.media_group_id)
     
-    # Inline keyboard buttons banayein (har caption ke liye ek button)
-    keyboard = [
-        [InlineKeyboardButton(caption, callback_data=caption)] for caption in selected_captions
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Get the existing caption
+    original_caption = message.caption or ""
     
-    # User ko options bhejein
-    update.message.reply_text("Please is post ke liye ek caption choose karein:", reply_markup=reply_markup)
-
-# User ke caption choice ko handle karein
-def handle_caption_choice(update: Update, context: CallbackContext):
-    query = update.callback_query
-    chosen_caption = query.data  # User ne jo caption choose kiya
+    # Check if the caption starts with "nahi"
+    if original_caption.lower().startswith("nahi"):
+        # Remove "nahi" and update the message
+        new_caption = original_caption[4:].strip()  # Remove "nahi" and any extra space
+        await message.edit_caption(new_caption)
+        return  # Skip adding a random caption
     
-    # Original post ko edit karein aur chosen caption add karein
-    context.bot.edit_message_caption(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id - 1,  # Pichli message (post) ko edit karein
-        caption=chosen_caption
-    )
+    # Choose a random caption
+    random_caption = random.choice(captions)
     
-    # User ko confirmation bhejein
-    query.answer(f"Caption added: {chosen_caption}")
+    # Split the original caption to separate links if any
+    split_caption = original_caption.split("http", 1)
+    
+    # Add "Here is your link" and "How to open"
+    if len(split_caption) > 1:
+        link = "http" + split_caption[1]
+        main_caption = split_caption[0].strip()
+        new_caption = (
+            f"{random_caption}\n\n"
+            f"Here is your link:\n{link}\n\n"
+            f"[How to open](t.me/howtopenlink)\n\n"
+        )
+        await message.edit_caption(new_caption)
+    else:
+        # Add only the random caption if no link is present
+        new_caption = random_caption
+        await message.edit_caption(new_caption)
 
-def main():
-    updater = Updater(API_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-
-    # Commands aur handlers
-    dispatcher.add_handler(CommandHandler("start", send_caption_options))
-    dispatcher.add_handler(MessageHandler(filters.PHOTO, send_caption_options))  # Filters ko update karna hoga
-    dispatcher.add_handler(CallbackQueryHandler(handle_caption_choice))
-
-    updater.start_polling()
-    print("Bot running... ✅")
-    updater.idle()
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    print("Bot is running...")
+    app.run()
