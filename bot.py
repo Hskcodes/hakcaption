@@ -5,10 +5,10 @@ from pyrogram.types import Message
 # Bot credentials
 api_id = 25649636  # Replace with your API ID
 api_hash = "43af470d1c625e603733268b3c2f7b8f"  # Replace with your API hash
-bot_token = ""  # Replace with your bot token
+bot_token = "7175839469:AAGZAd1HHRr77yOJK8tdExxjkziKiCA2SKM"  # Replace with your bot token
 
 # List of allowed channel IDs
-allowed_channels = [-100000000]  # Replace with your channel IDs
+allowed_channels = [-1001802798611]  # Replace with your channel IDs
 
 # Initialize the bot
 app = Client("caption_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
